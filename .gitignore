@@ -1,0 +1,6 @@
+# emacs
+*.~undo-tree~
+
+# data file & output
+todos.txt
+todo
