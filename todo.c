@@ -4,11 +4,9 @@
 #include <string.h>
 #include <ctype.h>
 
-/* ── Constants ─────────────────────────────────────────────────────── */
+#include "todo_io.h"
 
-#define MAX_TODO_TEXT 256
-#define MAX_TODOS    512
-#define TODO_FILE    "todos.txt"
+/* ── Constants ─────────────────────────────────────────────────────── */
 
 enum {
     PAIR_NORMAL = 1,
@@ -19,69 +17,11 @@ enum {
     PAIR_STATUS
 };
 
-/* ── Data Structures ───────────────────────────────────────────────── */
-
-typedef struct {
-    char text[MAX_TODO_TEXT];
-    int  done;
-} Todo;
-
-typedef struct {
-    Todo items[MAX_TODOS];
-    int  count;
-    int  cursor;
-    int  scroll_off;
-} AppState;
-
 /* ── Globals (windows) ─────────────────────────────────────────────── */
 
 static WINDOW *title_win;
 static WINDOW *list_win;
 static WINDOW *status_win;
-
-/* ── File I/O ──────────────────────────────────────────────────────── */
-
-static void todos_load(AppState *state)
-{
-    FILE *fp = fopen(TODO_FILE, "r");
-    if (!fp)
-        return;
-
-    state->count = 0;
-    char line[MAX_TODO_TEXT + 16];
-    while (fgets(line, sizeof(line), fp) && state->count < MAX_TODOS) {
-        /* Remove trailing newline */
-        size_t len = strlen(line);
-        if (len > 0 && line[len - 1] == '\n')
-            line[--len] = '\0';
-
-        if (len < 2)
-            continue;
-
-        int done = (line[0] == '1') ? 1 : 0;
-        const char *text = line + 2;  /* skip "0 " or "1 " */
-
-        Todo *t = &state->items[state->count];
-        strncpy(t->text, text, MAX_TODO_TEXT - 1);
-        t->text[MAX_TODO_TEXT - 1] = '\0';
-        t->done = done;
-        state->count++;
-    }
-
-    fclose(fp);
-}
-
-static void todos_save(const AppState *state)
-{
-    FILE *fp = fopen(TODO_FILE, "w");
-    if (!fp)
-        return;
-
-    for (int i = 0; i < state->count; i++)
-        fprintf(fp, "%d %s\n", state->items[i].done, state->items[i].text);
-
-    fclose(fp);
-}
 
 /* ── Data Manipulation ─────────────────────────────────────────────── */
 
@@ -349,7 +289,7 @@ int main(void)
 {
     AppState state = {0};
 
-    todos_load(&state);
+    todos_load(&state, TODO_FILE);
     ui_init();
     ui_create_windows();
 
@@ -423,7 +363,7 @@ int main(void)
         draw_all(&state, default_status);
     }
 
-    todos_save(&state);
+    todos_save(&state, TODO_FILE);
     ui_cleanup();
 
     return 0;
