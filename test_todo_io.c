@@ -64,8 +64,8 @@ static void test_save_items(void)
     fgets(line2, sizeof(line2), fp);
     fclose(fp);
 
-    check(strcmp(line1, "0 Buy milk\n") == 0,  "undone item formatted correctly");
-    check(strcmp(line2, "1 Read book\n") == 0, "done item formatted correctly");
+    check(strcmp(line1, "0 0 0 Buy milk\n") == 0,  "undone item formatted correctly");
+    check(strcmp(line2, "1 0 0 Read book\n") == 0, "done item formatted correctly");
     cleanup();
 }
 

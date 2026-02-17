@@ -38,6 +38,7 @@ Data file: `todos.txt` (auto-created on first quit, format: `0 text` or `1 text`
 | `e` | Edit selected todo (centered dialog, pre-filled) |
 | `Enter` / Space | Toggle complete/incomplete |
 | `d` | Delete (y/n confirmation) |
+| `s` | Cycle sort: None → Name A-Z → Created (new) → Created (old) → Done (new) → Done (old) |
 | `q` | Save and quit |
 
 ## Compiler Flags
