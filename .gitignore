@@ -1,6 +1,10 @@
 # emacs
 *.~undo-tree~
 
-# data file & output
+# data files
 todos.txt
+tags.txt
+
+# binaries
 todo
+test_todo_io

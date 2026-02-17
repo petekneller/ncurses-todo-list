@@ -35,6 +35,7 @@ Data file: `todos.txt` (auto-created on first quit, format: `0 text` or `1 text`
 | `j` / Down | Move cursor down |
 | `k` / Up | Move cursor up |
 | `a` | Add new todo (inline text input) |
+| `e` | Edit selected todo (centered dialog, pre-filled) |
 | `Enter` / Space | Toggle complete/incomplete |
 | `d` | Delete (y/n confirmation) |
 | `q` | Save and quit |

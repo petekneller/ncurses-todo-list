@@ -223,37 +223,58 @@ static void adjust_scroll(AppState *state, int visible_rows)
         state->scroll_off = state->cursor - visible_rows + 1;
 }
 
-/* ── Inline Text Input ─────────────────────────────────────────────── */
+/* ── Text Dialog ───────────────────────────────────────────────────── */
 
-static int input_todo_text(WINDOW *win, char *buf, int bufsize)
+/* Generic centered dialog for text input.
+   buf is pre-filled with initial text; result is written back into buf.
+   Returns 1 on confirm (non-empty), 0 on cancel or empty. */
+static int show_text_dialog(const char *title, char *buf, int bufsize)
 {
-    int len = 0;
-    buf[0] = '\0';
+    int dw = COLS * 2 / 3;
+    if (dw < 44) dw = 44;
+    if (dw > COLS - 4) dw = COLS - 4;
+    int dh = 7;
+    int dy = (LINES - dh) / 2;
+    int dx = (COLS - dw) / 2;
+
+    WINDOW *dlg = newwin(dh, dw, dy, dx);
+    keypad(dlg, TRUE);
+    wbkgd(dlg, COLOR_PAIR(PAIR_NORMAL));
+
+    int len = (int)strlen(buf);
+    int input_cols = dw - 6;
 
     curs_set(1);
 
-    int rows = getmaxy(win) - 2;
-    int cols = getmaxx(win) - 4;
-
     for (;;) {
-        /* Draw input line */
-        wmove(win, rows, 1);
-        wattron(win, COLOR_PAIR(PAIR_CURSOR));
-        for (int c = 0; c < cols + 2; c++)
-            waddch(win, ' ');
-        mvwprintw(win, rows, 2, ">> %s", buf);
-        wattroff(win, COLOR_PAIR(PAIR_CURSOR));
-        wrefresh(win);
+        werase(dlg);
+        box(dlg, 0, 0);
+        mvwprintw(dlg, 0, (dw - (int)strlen(title)) / 2, "%s", title);
+        mvwprintw(dlg, 2, 2, "Text:");
+        wattron(dlg, A_DIM);
+        mvwprintw(dlg, dh - 2, 2, "Enter: confirm   Esc: cancel");
+        wattroff(dlg, A_DIM);
 
-        int ch = wgetch(win);
+        wattron(dlg, COLOR_PAIR(PAIR_CURSOR));
+        wmove(dlg, 4, 2);
+        for (int c = 0; c < input_cols + 2; c++)
+            waddch(dlg, ' ');
+        mvwprintw(dlg, 4, 2, ">> %.*s", input_cols - 3, buf);
+        wattroff(dlg, COLOR_PAIR(PAIR_CURSOR));
+
+        wrefresh(dlg);
+
+        int ch = wgetch(dlg);
 
         if (ch == '\n' || ch == KEY_ENTER) {
             curs_set(0);
+            delwin(dlg);
             return (len > 0) ? 1 : 0;
         }
 
-        if (ch == 27) {  /* Escape */
+        if (ch == 27) {
             curs_set(0);
+            delwin(dlg);
             return 0;
         }
 
@@ -293,7 +314,7 @@ int main(void)
     ui_init();
     ui_create_windows();
 
-    const char *default_status = "a:Add  d:Delete  Enter:Toggle  j/k:Move  q:Quit";
+    const char *default_status = "a:Add  e:Edit  d:Delete  Enter:Toggle  j/k:Move  q:Quit";
     int visible_rows;
     int running = 1;
 
@@ -332,14 +353,26 @@ int main(void)
             break;
 
         case 'a': {
-            draw_status(status_win, "Type todo text, Enter to confirm, Esc to cancel");
             char buf[MAX_TODO_TEXT];
-            if (input_todo_text(list_win, buf, MAX_TODO_TEXT)) {
+            buf[0] = '\0';
+            if (show_text_dialog(" Add Todo ", buf, MAX_TODO_TEXT)) {
                 todo_add(&state, buf);
                 adjust_scroll(&state, visible_rows);
             }
             break;
         }
+
+        case 'e':
+            if (state.count > 0) {
+                char buf[MAX_TODO_TEXT];
+                strncpy(buf, state.items[state.cursor].text, MAX_TODO_TEXT - 1);
+                buf[MAX_TODO_TEXT - 1] = '\0';
+                if (show_text_dialog(" Edit Todo ", buf, MAX_TODO_TEXT)) {
+                    strncpy(state.items[state.cursor].text, buf, MAX_TODO_TEXT - 1);
+                    state.items[state.cursor].text[MAX_TODO_TEXT - 1] = '\0';
+                }
+            }
+            break;
 
         case 'd':
             if (state.count > 0) {
